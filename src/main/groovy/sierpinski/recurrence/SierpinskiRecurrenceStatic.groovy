@@ -53,6 +53,6 @@ class SierpinskiRecurrenceStatic {
             recurence.render()
         }
 
-        //image.write(new File("image-recurence.png"))
+        //image.write(new File("image-recurence-static.png"))
     }
 }

@@ -1,12 +1,14 @@
 package sierpinski
 
+import sierpinski.actors.SierpinskiActors
+import sierpinski.actors.SierpinskiActorsStatic
 import sierpinski.recurrence.SierpinskiRecurrence
 import sierpinski.recurrence.SierpinskiRecurrenceStatic
 
 class Benchmark {
 
     static void test() {
-        def IMAGE_SIZE = 8
+        def IMAGE_SIZE = 6
 
         def image = new FractalImage(IMAGE_SIZE)
         def recurence = new SierpinskiRecurrence(image)
@@ -20,6 +22,20 @@ class Benchmark {
 
         Timer.time("Sierpinski Recurrence Static") {
             recurenceStatic.render()
+        }
+
+        image = new FractalImage(IMAGE_SIZE)
+        def actors = new SierpinskiActors(image)
+
+        Timer.time("Sierpinski Actors") {
+            actors.render()
+        }
+
+        image = new FractalImage(IMAGE_SIZE)
+        def actorsStatic = new SierpinskiActorsStatic(image)
+
+        Timer.time("Sierpinski Actors Static") {
+            actorsStatic.render()
         }
 
         //image.write(new File("image-recurence.png"))
