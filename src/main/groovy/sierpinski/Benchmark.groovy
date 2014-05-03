@@ -8,34 +8,34 @@ import sierpinski.recurrence.SierpinskiRecurrenceStatic
 class Benchmark {
 
     static void test() {
-        def IMAGE_SIZE = 6
+        def IMAGE_SIZE = 7
 
         def image = new FractalImage(IMAGE_SIZE)
-        def recurence = new SierpinskiRecurrence(image)
+        def renderer = new SierpinskiRecurrence(image)
 
         Timer.time("Sierpinski Recurrence") {
-            recurence.render()
+            renderer.render()
         }
 
-        image = new FractalImage(IMAGE_SIZE)
-        def recurenceStatic = new SierpinskiRecurrenceStatic(image)
+        image.clearImage()
+        renderer = new SierpinskiRecurrenceStatic(image)
 
         Timer.time("Sierpinski Recurrence Static") {
-            recurenceStatic.render()
+            renderer.render()
         }
 
-        image = new FractalImage(IMAGE_SIZE)
-        def actors = new SierpinskiActors(image)
+        image.clearImage()
+        renderer = new SierpinskiActors(image)
 
         Timer.time("Sierpinski Actors") {
-            actors.render()
+            renderer.render()
         }
 
-        image = new FractalImage(IMAGE_SIZE)
-        def actorsStatic = new SierpinskiActorsStatic(image)
+        image.clearImage()
+        renderer = new SierpinskiActorsStatic(image)
 
         Timer.time("Sierpinski Actors Static") {
-            actorsStatic.render()
+            renderer.render()
         }
 
         //image.write(new File("image-recurence.png"))

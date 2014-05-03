@@ -24,8 +24,8 @@ class SierpinskiRecurrenceStatic {
 
             int dividedLength = (int)(length / 3)
 
-            (xOffset + dividedLength  - 1.. xOffset + 2 * dividedLength - 1).each { int x ->
-                (yOffset + dividedLength - 1 .. yOffset + 2 * dividedLength - 1).each { int y ->
+            (xOffset + dividedLength  .. xOffset + 2 * dividedLength - 1).each { int x ->
+                (yOffset + dividedLength  .. yOffset + 2 * dividedLength - 1).each { int y ->
                     image.setPixel(x, y, true)
                 }
             }
@@ -46,13 +46,13 @@ class SierpinskiRecurrenceStatic {
 
     public static void main(String[] args) {
 
-        def image = new FractalImage(9)
+        def image = new FractalImage(2)
         def recurence = new SierpinskiRecurrenceStatic(image)
 
         sierpinski.Timer.time("Sierpinski Recurrence Static") {
             recurence.render()
         }
 
-        //image.write(new File("image-recurence-static.png"))
+        image.write(new File("image-recurence-static.png"))
     }
 }

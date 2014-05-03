@@ -18,6 +18,13 @@ class FractalImage {
         backingArray = new boolean[size][size]
     }
 
+    void clearImage() {
+        (0..size -1).each {x ->
+            (0..size -1).each {y ->
+                backingArray[x][y] = false
+            }
+        }
+    }
     void setPixel(int x, int y, boolean value) {
         backingArray[x][y] = value
     }

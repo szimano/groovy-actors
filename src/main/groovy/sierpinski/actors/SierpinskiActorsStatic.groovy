@@ -20,7 +20,7 @@ class SierpinskiActorsStatic {
     }
 
     public static void main(String[] args) {
-        def image = new FractalImage(7)
+        def image = new FractalImage(1)
         def actors = new SierpinskiActorsStatic(image)
 
         sierpinski.Timer.time("Sierpinski Actors Static") {
@@ -66,7 +66,7 @@ class SlicingActorStatic extends DefaultActor {
                     case SquareCoordsStatic:
                         tasks << (SquareCoordsStatic)message
 
-                        if (tasks.size() > 3 && workers < Runtime.getRuntime().availableProcessors() - 1) {
+                        if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() - 1) {
                             new DrawingActorStatic(this, image).start()
                             workers++
                         }
@@ -101,8 +101,8 @@ class DrawingActorStatic extends DefaultActor {
                             if (length > 1) {
                                 int dividedLength = (int) (length / 3)
 
-                                (xOffset + dividedLength - 1..xOffset + 2 * dividedLength - 1).each { int x ->
-                                    (yOffset + dividedLength - 1..yOffset + 2 * dividedLength - 1).each { int y ->
+                                (xOffset + dividedLength .. xOffset + 2 * dividedLength - 1).each { int x ->
+                                    (yOffset + dividedLength .. yOffset + 2 * dividedLength - 1).each { int y ->
                                         image.setPixel(x, y, true)
                                     }
                                 }

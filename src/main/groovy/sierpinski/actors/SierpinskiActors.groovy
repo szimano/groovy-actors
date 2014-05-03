@@ -18,7 +18,7 @@ class SierpinskiActors {
     }
 
     public static void main(String[] args) {
-        def image = new FractalImage(8)
+        def image = new FractalImage(2)
         def actors = new SierpinskiActors(image)
 
         sierpinski.Timer.time("Sierpinski Actors") {
@@ -63,13 +63,14 @@ class SlicingActor extends DefaultActor {
                     case SquareCoords:
                         tasks << message
 
-                        if (tasks.size() > 3 && workers < Runtime.getRuntime().availableProcessors() - 1) {
+                        if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() - 1) {
                             new DrawingActor(this, image).start()
                             workers++
                         }
 
                         break
                 }
+                //println "Tasks outstanding: ${tasks.size()}; using ${workers} workers"
             }
         }
     }
@@ -97,8 +98,8 @@ class DrawingActor extends DefaultActor {
                             if (length > 1) {
                                 int dividedLength = (int) (length / 3)
 
-                                (xOffset + dividedLength - 1..xOffset + 2 * dividedLength - 1).each { int x ->
-                                    (yOffset + dividedLength - 1..yOffset + 2 * dividedLength - 1).each { int y ->
+                                (xOffset + dividedLength .. xOffset + 2 * dividedLength - 1).each { int x ->
+                                    (yOffset + dividedLength ..yOffset + 2 * dividedLength - 1).each { int y ->
                                         image.setPixel(x, y, true)
                                     }
                                 }
