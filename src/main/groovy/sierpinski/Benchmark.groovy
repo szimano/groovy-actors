@@ -8,7 +8,7 @@ import sierpinski.recurrence.SierpinskiRecurrenceStatic
 class Benchmark {
 
     static void test() {
-        def IMAGE_SIZE = 7
+        def IMAGE_SIZE = 6
 
         def image = new FractalImage(IMAGE_SIZE)
         def renderer = new SierpinskiRecurrence(image)

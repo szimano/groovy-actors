@@ -1,5 +1,6 @@
 package sierpinski.actors
 
+import groovyx.gpars.actor.Actors
 import groovyx.gpars.actor.DefaultActor
 import sierpinski.FractalImage
 
@@ -18,7 +19,9 @@ class SierpinskiActors {
     }
 
     public static void main(String[] args) {
-        def image = new FractalImage(2)
+        Actors.defaultActorPGroup.resize 10
+
+        def image = new FractalImage(6)
         def actors = new SierpinskiActors(image)
 
         sierpinski.Timer.time("Sierpinski Actors") {
@@ -33,6 +36,7 @@ class SlicingActor extends DefaultActor {
     FractalImage image
     int workers = 1
     List<SquareCoords> tasks = []
+    int totalTasks = 1
 
     SlicingActor(FractalImage image) {
         this.image = image
@@ -54,6 +58,7 @@ class SlicingActor extends DefaultActor {
 
                             if (workers == 0) {
                                 terminate()
+//                                println "Total tasks processed: ${totalTasks}"
                             }
                         } else {
                             reply tasks.remove(0)
@@ -62,6 +67,7 @@ class SlicingActor extends DefaultActor {
                         break
                     case SquareCoords:
                         tasks << message
+                        totalTasks++
 
                         if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() - 1) {
                             new DrawingActor(this, image).start()
@@ -95,12 +101,13 @@ class DrawingActor extends DefaultActor {
                 switch (message) {
                     case SquareCoords:
                         ((SquareCoords)message).with {
+//                            println "Working in ${this}"
                             if (length > 1) {
                                 int dividedLength = (int) (length / 3)
 
                                 (xOffset + dividedLength .. xOffset + 2 * dividedLength - 1).each { int x ->
                                     (yOffset + dividedLength ..yOffset + 2 * dividedLength - 1).each { int y ->
-                                        image.setPixel(x, y, true)
+                                       image.setPixel(x, y, true)
                                     }
                                 }
 
@@ -115,6 +122,7 @@ class DrawingActor extends DefaultActor {
                                 slicer.send(new SquareCoords(xOffset + dividedLength, yOffset + 2 * dividedLength, dividedLength))
                                 slicer.send(new SquareCoords(xOffset + 2 * dividedLength, yOffset + 2 * dividedLength, dividedLength))
                             }
+//                            println "Finished in ${this}"
                         }
                         break
 

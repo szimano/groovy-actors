@@ -1,51 +1,37 @@
 package sierpinski
 
+import groovy.transform.CompileStatic
+
 import javax.imageio.ImageIO
 import java.awt.image.BufferedImage
 
-/**
- * Created by szimano on 03/05/14.
- */
+@CompileStatic
 class FractalImage {
 
     int size
 
-    boolean[][] backingArray
+    BufferedImage image
 
     FractalImage(int squareSize) {
-        this.size = Math.pow(3, squareSize)
+        this.size = (int)Math.pow(3, squareSize)
 
-        backingArray = new boolean[size][size]
+        image = new BufferedImage(size, size, BufferedImage.TYPE_BYTE_BINARY)
     }
 
     void clearImage() {
-        (0..size -1).each {x ->
-            (0..size -1).each {y ->
-                backingArray[x][y] = false
+        (0..size -1).each {int x ->
+            (0..size -1).each {int y ->
+                image.setRGB(x, y, 0)
             }
         }
     }
     void setPixel(int x, int y, boolean value) {
-        backingArray[x][y] = value
+        image.setRGB(x, y, value ? 0xFFFFFF : 0)
     }
 
     void write(File toFile) {
-        toFile.withOutputStream {
-            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_BYTE_BINARY)
-
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    image.setRGB(i, j, backingArray[i][j] ? 0xFFFFFF : 0)
-                }
-            }
-
+        toFile.withOutputStream { OutputStream it ->
             ImageIO.write(image, "PNG", it)
         }
-    }
-
-    public static void main(String[] args) {
-        FractalImage image = new FractalImage(100)
-
-        image.write(new File("image.png"))
     }
 }
