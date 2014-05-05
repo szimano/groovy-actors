@@ -46,7 +46,7 @@ class SierpinskiRecurrenceStatic {
 
     public static void main(String[] args) {
 
-        def image = new FractalImage(2)
+        def image = new FractalImage(7)
         def recurence = new SierpinskiRecurrenceStatic(image)
 
         sierpinski.Timer.time("Sierpinski Recurrence Static") {

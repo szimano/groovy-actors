@@ -20,7 +20,7 @@ class SierpinskiActorsStatic {
     }
 
     public static void main(String[] args) {
-        def image = new FractalImage(1)
+        def image = new FractalImage(7)
         def actors = new SierpinskiActorsStatic(image)
 
         sierpinski.Timer.time("Sierpinski Actors Static") {
@@ -59,20 +59,26 @@ class SlicingActorStatic extends DefaultActor {
                                 terminate()
                             }
                         } else {
-                            reply tasks.remove(0)
+                            def tasksToReturn = 10000
+
+                            reply tasks.take(tasksToReturn)
+                            this.tasks = tasks.drop(tasksToReturn)
                         }
 
                         break
-                    case SquareCoordsStatic:
-                        tasks << (SquareCoordsStatic)message
+                    case List:
+                        List<SquareCoordsStatic> newCoords = (List<SquareCoordsStatic>)message
 
-                        if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() - 1) {
+                        tasks.addAll(newCoords)
+
+                        if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() * 2) {
                             new DrawingActorStatic(this, image).start()
                             workers++
                         }
 
                         break
                 }
+                //println "Tasks outstanding: ${tasks.size()}; using ${workers} workers"
             }
         }
     }
@@ -92,33 +98,43 @@ class DrawingActorStatic extends DefaultActor {
 
     void act() {
         loop {
-            slicer << new GiveMeSliceStatic()
+            slicer << new GiveMeSlice()
 
             react { message ->
                 switch (message) {
-                    case SquareCoordsStatic:
-                        ((SquareCoordsStatic)message).with {
-                            if (length > 1) {
-                                int dividedLength = (int) (length / 3)
+                    case List:
+                        List<SquareCoordsStatic> reply = []
 
-                                (xOffset + dividedLength .. xOffset + 2 * dividedLength - 1).each { int x ->
-                                    (yOffset + dividedLength .. yOffset + 2 * dividedLength - 1).each { int y ->
-                                        image.setPixel(x, y, true)
+                        ((List<SquareCoordsStatic>) message).each { SquareCoordsStatic coords ->
+                            coords.with {
+//                            println "Working in ${this}"
+                                if (length > 1) {
+                                    int dividedLength = (int) (length / 3)
+
+                                    (xOffset + dividedLength..xOffset + 2 * dividedLength - 1).each { int x ->
+                                        (yOffset + dividedLength..yOffset + 2 * dividedLength - 1).each { int y ->
+                                            image.setPixel(x, y, true)
+                                        }
                                     }
+
+
+                                    reply.add(new SquareCoordsStatic(xOffset, yOffset, dividedLength))
+                                    reply.add(new SquareCoordsStatic(xOffset + dividedLength, yOffset, dividedLength))
+                                    reply.add(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset, dividedLength))
+
+                                    reply.add(new SquareCoordsStatic(xOffset, yOffset + dividedLength, dividedLength))
+                                    reply.add(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset + dividedLength, dividedLength))
+
+                                    reply.add(new SquareCoordsStatic(xOffset, yOffset + 2 * dividedLength, dividedLength))
+                                    reply.add(new SquareCoordsStatic(xOffset + dividedLength, yOffset + 2 * dividedLength, dividedLength))
+                                    reply.add(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset + 2 * dividedLength, dividedLength))
                                 }
-
-                                slicer.send(new SquareCoordsStatic(xOffset, yOffset, dividedLength))
-                                slicer.send(new SquareCoordsStatic(xOffset + dividedLength, yOffset, dividedLength))
-                                slicer.send(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset, dividedLength))
-
-                                slicer.send(new SquareCoordsStatic(xOffset, yOffset + dividedLength, dividedLength))
-                                slicer.send(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset + dividedLength, dividedLength))
-
-                                slicer.send(new SquareCoordsStatic(xOffset, yOffset + 2 * dividedLength, dividedLength))
-                                slicer.send(new SquareCoordsStatic(xOffset + dividedLength, yOffset + 2 * dividedLength, dividedLength))
-                                slicer.send(new SquareCoordsStatic(xOffset + 2 * dividedLength, yOffset + 2 * dividedLength, dividedLength))
+//                            println "Finished in ${this}"
                             }
                         }
+
+                        slicer << reply
+
                         break
 
                     case TERMINATE:

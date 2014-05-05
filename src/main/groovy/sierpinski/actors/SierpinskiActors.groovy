@@ -1,7 +1,7 @@
 package sierpinski.actors
 
-import groovyx.gpars.actor.Actors
 import groovyx.gpars.actor.DefaultActor
+import groovyx.gpars.actor.impl.MessageStream
 import sierpinski.FractalImage
 
 class SierpinskiActors {
@@ -19,9 +19,7 @@ class SierpinskiActors {
     }
 
     public static void main(String[] args) {
-        Actors.defaultActorPGroup.resize 10
-
-        def image = new FractalImage(6)
+        def image = new FractalImage(8)
         def actors = new SierpinskiActors(image)
 
         sierpinski.Timer.time("Sierpinski Actors") {
@@ -34,45 +32,65 @@ class SierpinskiActors {
 
 class SlicingActor extends DefaultActor {
     FractalImage image
-    int workers = 1
+    List<MessageStream> workers = []
     List<SquareCoords> tasks = []
+
     int totalTasks = 1
+    int totalMessagesReceived = 0
+
+    int generator = 0
+
+    int numberOfWorkers = 8
 
     SlicingActor(FractalImage image) {
         this.image = image
 
         tasks << new SquareCoords(0, 0, image.size)
 
-        new DrawingActor(this, image).start()
+        (0..numberOfWorkers - 1).each {
+            new DrawingActor(this, image, generator++).start()
+        }
+
     }
 
     void act() {
         loop {
             react { message ->
+                totalMessagesReceived++
+
                 switch (message) {
                     case GiveMeSlice:
+                        workers << sender
+
                         if (tasks.size() == 0) {
-                            reply DrawingActor.TERMINATE
 
-                            workers--
+                            if (workers.size() == numberOfWorkers) {
+                                workers*.send(DrawingActor.TERMINATE)
 
-                            if (workers == 0) {
                                 terminate()
-//                                println "Total tasks processed: ${totalTasks}"
+                                println "Total tasks processed: ${totalTasks}"
+                                println "Total msg received ${totalMessagesReceived}"
                             }
                         } else {
-                            reply tasks.remove(0)
+
+                            while (!tasks.empty && !workers.empty) {
+                                def tasksToReturn = Math.max((int) 1, (int) Math.min((int) 10000, (int) tasks.size() / workers.size()))
+
+                                MessageStream worker = workers.remove(0)
+
+                                worker.send(tasks.take(tasksToReturn))
+
+                                this.tasks = tasks.drop(tasksToReturn)
+                            }
                         }
 
                         break
-                    case SquareCoords:
-                        tasks << message
-                        totalTasks++
+                    case List:
+                        List<SquareCoords> newCoords = (List) message
 
-                        if (tasks.size() > 20 && workers < Runtime.getRuntime().availableProcessors() - 1) {
-                            new DrawingActor(this, image).start()
-                            workers++
-                        }
+                        tasks.addAll(newCoords)
+
+                        totalTasks += newCoords.size()
 
                         break
                 }
@@ -87,10 +105,12 @@ class DrawingActor extends DefaultActor {
 
     FractalImage image
     SlicingActor slicer
+    int id
 
-    DrawingActor(SlicingActor slicer, FractalImage image) {
+    DrawingActor(SlicingActor slicer, FractalImage image, int id) {
         this.slicer = slicer
         this.image = image
+        this.id = id
     }
 
     void act() {
@@ -99,31 +119,39 @@ class DrawingActor extends DefaultActor {
 
             react { message ->
                 switch (message) {
-                    case SquareCoords:
-                        ((SquareCoords)message).with {
-//                            println "Working in ${this}"
-                            if (length > 1) {
-                                int dividedLength = (int) (length / 3)
+                    case List:
+                        List<SquareCoords> reply = []
 
-                                (xOffset + dividedLength .. xOffset + 2 * dividedLength - 1).each { int x ->
-                                    (yOffset + dividedLength ..yOffset + 2 * dividedLength - 1).each { int y ->
-                                       image.setPixel(x, y, true)
+                        sierpinski.Timer.time("Actor ${id} processing ${message.size()} tasks") {
+                            ((List<SquareCoords>) message).each { SquareCoords coords ->
+
+                                if (coords.length > 1) {
+                                    int dividedLength = (int) (coords.length / 3)
+
+                                    sierpinski.Timer.time("Drawing pixels in ${id} for length ${coords.length}") {
+                                        (coords.xOffset + dividedLength..coords.xOffset + 2 * dividedLength - 1).each { int x ->
+                                            (coords.yOffset + dividedLength..coords.yOffset + 2 * dividedLength - 1).each { int y ->
+                                                image.setPixel(x, y, true)
+                                            }
+                                        }
                                     }
+
+                                    reply.add(new SquareCoords(coords.xOffset, coords.yOffset, dividedLength))
+                                    reply.add(new SquareCoords(coords.xOffset + dividedLength, coords.yOffset, dividedLength))
+                                    reply.add(new SquareCoords(coords.xOffset + 2 * dividedLength, coords.yOffset, dividedLength))
+
+                                    reply.add(new SquareCoords(coords.xOffset, coords.yOffset + dividedLength, dividedLength))
+                                    reply.add(new SquareCoords(coords.xOffset + 2 * dividedLength, coords.yOffset + dividedLength, dividedLength))
+
+                                    reply.add(new SquareCoords(coords.xOffset, coords.yOffset + 2 * dividedLength, dividedLength))
+                                    reply.add(new SquareCoords(coords.xOffset + dividedLength, coords.yOffset + 2 * dividedLength, dividedLength))
+                                    reply.add(new SquareCoords(coords.xOffset + 2 * dividedLength, coords.yOffset + 2 * dividedLength, dividedLength))
                                 }
-
-                                slicer.send(new SquareCoords(xOffset, yOffset, dividedLength))
-                                slicer.send(new SquareCoords(xOffset + dividedLength, yOffset, dividedLength))
-                                slicer.send(new SquareCoords(xOffset + 2 * dividedLength, yOffset, dividedLength))
-
-                                slicer.send(new SquareCoords(xOffset, yOffset + dividedLength, dividedLength))
-                                slicer.send(new SquareCoords(xOffset + 2 * dividedLength, yOffset + dividedLength, dividedLength))
-
-                                slicer.send(new SquareCoords(xOffset, yOffset + 2 * dividedLength, dividedLength))
-                                slicer.send(new SquareCoords(xOffset + dividedLength, yOffset + 2 * dividedLength, dividedLength))
-                                slicer.send(new SquareCoords(xOffset + 2 * dividedLength, yOffset + 2 * dividedLength, dividedLength))
                             }
-//                            println "Finished in ${this}"
                         }
+
+                        slicer << reply
+
                         break
 
                     case TERMINATE:
